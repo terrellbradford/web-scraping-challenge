@@ -46,6 +46,15 @@ def scrape():
 
     facts = facts_df.to_html(index=False)
 
+    table2 = pd.read_html(facts_url)
+
+    df2 = table2[0]
+    header = df2.iloc[0]
+    facts2_df = df2[1:]
+    facts2_df.columns = header
+
+    facts2 = facts2_df.to_html(index=False)
+
 
     # URL Path to USGS Astrogeology
     URL_USGS_Astrogeology = 'https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars'
@@ -100,6 +109,7 @@ def scrape():
         "news_title": news_title,
         "news_p": news_p,
         "facts": facts,
+        "facts2": facts2,
         "hemisphere_image_one": hemisphere_image_urls[0]['img_url'],
         "hemisphere_image_two": hemisphere_image_urls[1]['img_url'],
         "hemisphere_image_three": hemisphere_image_urls[2]['img_url'],
