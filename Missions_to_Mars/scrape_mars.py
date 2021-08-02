@@ -10,30 +10,34 @@ def scrape():
     executable_path = {'executable_path': ChromeDriverManager().install()}
     browser = Browser('chrome', **executable_path, headless=False)
 
-    url_NASA_news = 'https://mars.nasa.gov/news/'
-    browser.visit(url_NASA_news)
-    
+    image_url = "https://spaceimages-mars.com/"
+    browser.visit(image_url)
+
     tm.sleep(1)
-    # HTML Object
+
+    #Scraping Featured Image
     html = browser.html
-    # Parse with Beautiful Soup
-    soup = bs(html, 'html.parser')
+    soup = bs(html, "html.parser")
+
+    featured = soup.find('img', class_='headerimage fade-in')['src']
+
+    featured_image_url = image_url + featured
+
+    news_url = "https://redplanetscience.com/"
+    browser.visit(news_url)
+
+    tm.sleep(1)
+
+    html = browser.html
+    soup = bs(html, "html.parser")
+
+    news = soup.find('div', class_='list_text')
+
+    news_title = news.find(class_='content_title').text
+    news_p = news.find(class_='article_teaser_body').text
 
 
-    # Scraping for Latest Title
-    slide = soup.find('li', class_='slide')
-    categories = slide.find_all('div', class_='content_title')
-    for category in categories:
-        news_title = category.text.strip()
-
-    # Scraping for Latest Paragraph
-    slide = soup.find('li', class_='slide')
-    categories = slide.find_all('div', class_='article_teaser_body')
-    for category in categories:
-        news_p = category.text.strip()
-
-
-    # Creating Mars Data Table
+    # Creating Mars Data Tables
     # URL Path to Mars Facts
     facts_url = "https://galaxyfacts-mars.com"
 
@@ -55,53 +59,41 @@ def scrape():
 
     facts2 = facts2_df.to_html(index=False)
 
-
-    # URL Path to USGS Astrogeology
-    URL_USGS_Astrogeology = 'https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars'
-    browser.visit(URL_USGS_Astrogeology)
-
-    # HTML Object
-    html = browser.html
-    
-    soup = bs(html, 'html.parser')
-    
-    tm.sleep(1)
-    # URL Path to USGS Home Page
-    URL_USGS_HomePage = 'https://astrogeology.usgs.gov'
-
-    # Scraping
-    field_item = soup.find_all('a', class_='itemLink product-item')
-
-    
-    hrefs_list = [item.get('href') for item in field_item]
-    hrefs_list = list(set(hrefs_list))
+    # URL Path 
+    hemi_url = 'https://marshemispheres.com/'
+    browser.visit(hemi_url)
 
     # Creating Dictionary of hemisphere_image_urls
     hemisphere_image_urls = []
 
     # For Loop Grab the Title and Image Path
-    for href in hrefs_list:
-        # Creating URL for Mars Hemispheres Page
-        URL_Hemis = URL_USGS_HomePage + href
-        browser.visit(URL_Hemis)
-        
-        # HTML Object
+    for x in range(0, 4):
+
         html = browser.html
-        
-        # Parse with Beautiful Soup
-        soup = bs(html, 'html.parser')
-        
-        #Scraping Title
-        img_title = soup.find_all('h2', class_='title')
-        for t in img_title:
-            img_title_clean = t.text.strip()
-        
-        # Scraping img URL
-        img_download_thumb = soup.find('div', class_='downloads')
-        img_url = img_download_thumb.find_all('a')[0]['href']
+        soup = bs(html, "html.parser")
+
+        hemi_links = browser.links.find_by_partial_text('Hemisphere Enhanced')
+
+        hemi_links[x].click()
+
+        html = browser.html
+        soup = bs(html, "html.parser")
+
+        tm.sleep(1)
+
+        hemi_image = soup.find('img', class_='wide-image')['src']
+        img_title_clean = soup.find('h2', class_='title').text.strip('Enhanced').rstrip()
+
+        img_url = hemi_url + hemi_image
 
         # Appending Dictionary to List
         hemisphere_image_urls.append({"Title": img_title_clean, "img_url": img_url})
+
+        browser.links.find_by_partial_text('Back').click()
+
+        tm.sleep(1)
+
+    browser.quit()
         
 
     # Storing Data into Dictionary
@@ -110,6 +102,7 @@ def scrape():
         "news_p": news_p,
         "facts": facts,
         "facts2": facts2,
+        'featured': featured_image_url,
         "hemisphere_image_one": hemisphere_image_urls[0]['img_url'],
         "hemisphere_image_two": hemisphere_image_urls[1]['img_url'],
         "hemisphere_image_three": hemisphere_image_urls[2]['img_url'],
@@ -119,9 +112,6 @@ def scrape():
         "hemisphere_title_three": hemisphere_image_urls[2]['Title'],
         "hemisphere_title_four": hemisphere_image_urls[3]['Title'],
     }
-
-    # Closing Browser
-    browser.quit()
 
     # Return Results
     return mars_data
